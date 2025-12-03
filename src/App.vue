@@ -3,11 +3,11 @@
   <div style="height: 150vh; background-color: #FFE1EB;"></div> <!-- voor scroll -->
 </template>
 
-
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
 
 const container = ref(null)
 
@@ -58,6 +58,11 @@ onMounted(() => {
   renderer.setClearColor(0x000000, 0) // transparant
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
+
+  // Tone mapping & exposure voor realistischere HDR effecten
+  renderer.toneMapping = THREE.ACESFilmicToneMapping
+  renderer.toneMappingExposure = 1.0 // Speel hiermee voor helderheid
+
   container.value.appendChild(renderer.domElement)
 
   // Lights
@@ -81,6 +86,25 @@ onMounted(() => {
   pointLight.position.set(-3, 3, 5)
   scene.add(pointLight)
 
+  // HDRI environment map laden en instellen
+  const exrLoader = new EXRLoader()
+  exrLoader.load('/lighting.exr', (texture) => {
+    texture.mapping = THREE.EquirectangularReflectionMapping
+    scene.environment = texture
+    // scene.background = texture // NIET zetten, want geen achtergrond
+
+    // Als model al geladen is, update dan materialen met envMap
+    if (heartModel) {
+      heartModel.traverse((child) => {
+        if (child.isMesh && child.material) {
+          child.material.envMap = texture
+          child.material.envMapIntensity = 5
+          child.material.needsUpdate = true
+        }
+      })
+    }
+  })
+
   // Model loader
   const loader = new GLTFLoader()
   loader.load(
@@ -90,6 +114,11 @@ onMounted(() => {
       heartModel.scale.set(1.5, 1.5, 1.5)
       heartModel.castShadow = true
       heartModel.receiveShadow = true
+
+      // Zodra de HDRI geladen is (of zodra deze geladen wordt),
+      // kun je hier ook envMap aan materialen koppelen,
+      // maar dat is beter in de exrLoader callback hierboven
+
       scene.add(heartModel)
     },
     undefined,
@@ -105,44 +134,31 @@ onMounted(() => {
   onWindowResize()
 
   function animate() {
-  animationFrameId = requestAnimationFrame(animate)
+    animationFrameId = requestAnimationFrame(animate)
 
-  const elapsed = clock.getElapsedTime()
+    const elapsed = clock.getElapsedTime()
 
-  if (heartModel) {
-    // Combineer scroll rotatie en muis rotatie smooth
-    const combinedTargetY = scrollRotation + targetRotationY
+    if (heartModel) {
+      // Combineer scroll rotatie en muis rotatie smooth
+      const combinedTargetY = scrollRotation + targetRotationY
 
-    // Rotaties:
-    // Pas de 0.05 aan voor snellere/langzamere smoothing van rotatie (hoe dichter bij 1, hoe sneller)
-    heartModel.rotation.y += (combinedTargetY - heartModel.rotation.y) * 0.05
-    heartModel.rotation.x += (targetRotationX - heartModel.rotation.x) * 0.05
+      heartModel.rotation.y += (combinedTargetY - heartModel.rotation.y) * 0.05
+      heartModel.rotation.x += (targetRotationX - heartModel.rotation.x) * 0.05
 
-    // Zweef-effect (subtiele beweging)
-    // Pas de getallen bij Math.sin en Math.cos aan voor snelheid (hoe hoger, hoe sneller)
-    heartModel.position.x = Math.sin(elapsed * 0.5) * 0.05
-    heartModel.position.y = Math.cos(elapsed * 0.7) * 0.05 - window.scrollY * 0.002  // scrollbeweging verticaal
-    heartModel.position.z = Math.sin(elapsed * 0.3) * 0.05
+      heartModel.position.x = Math.sin(elapsed * 0.5) * 0.05
+      heartModel.position.y = Math.cos(elapsed * 0.7) * 0.05 - window.scrollY * 0.002
+      heartModel.position.z = Math.sin(elapsed * 0.3) * 0.05
 
-    // Pas de 0.01 bij window.scrollY aan om scrollafstand te vergroten/verkleinen
-    // Bijvoorbeeld 0.02 maakt de beweging dubbel zo groot, 0.005 halveert het
+      const beat1 = Math.sin(elapsed * 6) * 0.03
+      const beat2 = Math.sin(elapsed * 2) * 0.015
+      const pulse = 1 + Math.max(0, beat1) + Math.max(0, beat2)
 
-    // Hartslag-effect
-    // Pas frequenties (6 en 2) aan om de snelheid van het kloppen te wijzigen
-    // Pas de amplitude (0.03 en 0.015) aan om het schalingsverschil te vergroten/verkleinen
-    const beat1 = Math.sin(elapsed * 6) * 0.03
-    const beat2 = Math.sin(elapsed * 2) * 0.015
-    const pulse = 1 + Math.max(0, beat1) + Math.max(0, beat2)
+      heartModel.scale.set(pulse, pulse, pulse)
+    }
 
-    heartModel.scale.set(pulse, pulse, pulse)
+    renderer.render(scene, camera)
   }
-
-  renderer.render(scene, camera)
-}
-animate()
-
-
-
+  animate()
 })
 
 onBeforeUnmount(() => {
@@ -168,6 +184,7 @@ canvas {
   height: 100%;
 }
 </style>
+
 
 
 
