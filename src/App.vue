@@ -7,7 +7,10 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
+// import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
+import { HDRLoader } from 'three/examples/jsm/loaders/HDRLoader'
+
+
 
 const container = ref(null)
 
@@ -82,28 +85,23 @@ onMounted(() => {
   directionalLight.shadow.mapSize.height = 2048
   scene.add(directionalLight)
 
-  const pointLight = new THREE.PointLight(0xffffff, 0.4)
-  pointLight.position.set(-3, 3, 5)
-  scene.add(pointLight)
-
   // HDRI environment map laden en instellen
-  const exrLoader = new EXRLoader()
-  exrLoader.load('/lighting.exr', (texture) => {
-    texture.mapping = THREE.EquirectangularReflectionMapping
-    scene.environment = texture
-    // scene.background = texture // NIET zetten, want geen achtergrond
+  const hdrLoader = new HDRLoader()
+  hdrLoader.load('/lighting.hdr', (texture) => {
+  texture.mapping = THREE.EquirectangularReflectionMapping
+  texture.encoding = THREE.LinearEncoding
+  scene.environment = texture
 
-    // Als model al geladen is, update dan materialen met envMap
-    if (heartModel) {
-      heartModel.traverse((child) => {
-        if (child.isMesh && child.material) {
-          child.material.envMap = texture
-          child.material.envMapIntensity = 5
-          child.material.needsUpdate = true
-        }
-      })
-    }
-  })
+  if (heartModel) {
+    heartModel.traverse((child) => {
+      if (child.isMesh && child.material) {
+        child.material.envMap = texture
+        child.material.envMapIntensity = 5
+        child.material.needsUpdate = true
+      }
+    })
+  }
+})
 
   // Model loader
   const loader = new GLTFLoader()
@@ -117,8 +115,6 @@ onMounted(() => {
 
       // Zodra de HDRI geladen is (of zodra deze geladen wordt),
       // kun je hier ook envMap aan materialen koppelen,
-      // maar dat is beter in de exrLoader callback hierboven
-
       scene.add(heartModel)
     },
     undefined,
