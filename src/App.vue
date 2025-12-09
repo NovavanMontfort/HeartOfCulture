@@ -1,7 +1,11 @@
 <template>
-  <div ref="container" class="three-container"></div>
-  <div style="height: 150vh; background-color: #FFE1EB;"></div> <!-- voor scroll -->
+  <div class="wrapper">
+    <div class="text-background">JOIN THE CULT</div>
+    <div ref="container" class="three-container"></div>
+  </div>
+  <!-- <div style="height: 150vh; background-color: #FFE1EB;"></div> -->
 </template>
+
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
@@ -188,7 +192,7 @@ onMounted(() => {
 
       // Subtiele zweef-animatie en scroll-vertical offset
       heartModel.position.x = Math.sin(elapsed * 0.5) * 0.05
-      heartModel.position.y = Math.cos(elapsed * 0.7) * 0.05 - (scrollRotation * 0.6)
+      heartModel.position.y = Math.cos(elapsed * 0.7) * 0.05 
       heartModel.position.z = Math.sin(elapsed * 0.3) * 0.05
 
       // Pulsatie
@@ -216,6 +220,14 @@ onBeforeUnmount(() => {
 </script>
 
 <style>
+@font-face {
+  font-family: 'Inter Tight';
+  src: url('/InterTight.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 html,
 body,
 #app {
@@ -227,14 +239,46 @@ body,
   overflow-y: auto; /* zorg dat scrollen kan */
 }
 
-.three-container {
+.wrapper {
+  position: relative;
   width: 100vw;
   height: 100vh;
-  background-color: black;
+  overflow: visible; /* zodat tekst niet clipped wordt */
+}
+
+.text-background {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-family: 'Inter Tight', sans-serif;
+  font-weight: 900;
+  font-size: clamp(5vw, 12vw, 16vw);
+  user-select: none;
+  pointer-events: none;
+  z-index: 0; /* achter canvas */
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: transparent;
+  width: 100%;
+  text-align: center;
+}
+
+.three-container {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: transparent;
+  z-index: 1; /* boven tekst */
   display: flex;
   justify-content: center;
   align-items: center;
 }
+
+
 
 canvas {
   display: block;
@@ -242,6 +286,7 @@ canvas {
   height: 100%;
   background-color: transparent;
 }
+
 </style>
 
 
