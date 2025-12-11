@@ -56,6 +56,8 @@ const showHeart = ref(false);
 const container = ref(null);
 const kineticType = ref(null);
 
+const modelLoaded = ref(false);
+
 // ---------- BACKGROUND TEXTS (you fill textItems yourself) ----------
 const textItems = reactive([
   { id: 1, text: "CREATE", top: "5%", left: "8%", right: null, highlighted: false, scrambleTl: null },
@@ -94,8 +96,9 @@ const textItems = reactive([
   { id: 34, text: "ATTENTION", top: "80%", left: "35%", right: null, highlighted: false, scrambleTl: null },
   { id: 35, text: "AWARENESS", top: "80%", left: "65%", right: null, highlighted: false, scrambleTl: null },
   { id: 36, text: "PRESENCE", top: "80%", left: null, right: "10%", highlighted: false, scrambleTl: null },
-  { id: 37, text: "S", top: "85%", left: "25%", right: null, highlighted: false, scrambleTl: null },
-  { id: 38, text: "I", top: "85%", left: null, right: "25%", highlighted: false, scrambleTl: null },
+  { id: 37, text: "JOIN", top: "92%", left: "25%", right: null, highlighted: false, scrambleTl: null },
+  { id: 38, text: "THE", top: "92%", left: "50%", right: null, highlighted: false, scrambleTl: null },
+  { id: 39, text: "CULT", top: "92%", left: null, right: "25%", highlighted: false, scrambleTl: null },
 ]);
 
 const autoHighlightActive = ref(false);
@@ -357,19 +360,23 @@ onMounted(() => {
 
   const loader = new GLTFLoader();
   loader.load(
-    "/the_heart.glb",
-    (gltf) => {
-      heartModel = gltf.scene;
-      heartModel.scale.set(1.5, 1.5, 1.5);
-      heartModel.castShadow = true;
-      heartModel.receiveShadow = true;
-      scene.add(heartModel);
-    },
-    undefined,
-    (error) => {
-      console.error("Error loading model:", error);
-    }
-  );
+  "/the_heart.glb",
+  (gltf) => {
+    heartModel = gltf.scene;
+    heartModel.scale.set(1.5, 1.5, 1.5);
+    heartModel.castShadow = true;
+    heartModel.receiveShadow = true;
+    scene.add(heartModel);
+
+    // Zeg dat het model klaar is met laden
+    modelLoaded.value = true;
+  },
+  undefined,
+  (error) => {
+    console.error("Error loading model:", error);
+  }
+);
+
 
   window.addEventListener("mousemove", onMouseMove, { passive: true });
   const appEl = document.getElementById("app");
@@ -430,15 +437,32 @@ onMounted(() => {
     .to(kineticEl, { opacity: 0, duration: 1.5 })
     .set(kineticEl, { rotation: 0, scale: 1, x: 0, opacity: 1 })
     .eventCallback("onComplete", () => {
-      showHeart.value = true;
+  if (modelLoaded.value) {
+    // Model is al klaar, direct showHeart aan
+    showHeart.value = true;
 
-      // wait nextTick so background items mount and refs collect
-      nextTick(() => {
-        scalePositions();
-        startAutoHighlight();
-        startRandomScrambles();
-      });
+    nextTick(() => {
+      scalePositions();
+      startAutoHighlight();
+      startRandomScrambles();
     });
+  } else {
+    // Wacht totdat modelLoaded true wordt (model klaar)
+    const unwatch = watch(modelLoaded, (val) => {
+      if (val) {
+        showHeart.value = true;
+
+        nextTick(() => {
+          scalePositions();
+          startAutoHighlight();
+          startRandomScrambles();
+        });
+
+        unwatch(); // stop watcher zodra model geladen is
+      }
+    });
+  }
+});
 });
 
 // Cleanup
@@ -538,7 +562,7 @@ canvas {
 
 /* Achtergrond tekstjes */
 .text-item {
-  color: #ffe1eb;
+  color: #fff;
   font-size: clamp(0.4rem, 0.9vw, 0.8rem);
   text-transform: uppercase;
   opacity: 1;
@@ -560,7 +584,7 @@ canvas {
   left: -4px;
   width: 0;
   height: calc(100% + 4px);
-  background-color: #ffe1eb; /* tc8l kleur = #ffe1eb */
+  background-color: #fff; /* tc8l kleur = #ffe1eb */
   z-index: -1;
   transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
   will-change: width;
