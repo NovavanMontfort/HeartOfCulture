@@ -425,9 +425,9 @@ onMounted(() => {
     .to(kineticEl, { duration: 1.4, scale: 2.3, rotation: -90 })
     .to(oddLines, { x: "20%", duration: 1, stagger: 0.08 }, "<")
     .to(evenLines, { x: "-20%", duration: 1, stagger: 0.08 }, "<")
-    .to(oddLines, { x: "-200%", duration: 1.5, stagger: 0.08 }, ">")
-    .to(evenLines, { x: "200%", duration: 1.5, stagger: 0.08 }, "<")
-    .to(kineticEl, { opacity: 0, duration: 1.5 })
+    .to(oddLines, { x: "-200%", duration: 1, stagger: 0.08 }, ">")
+    .to(evenLines, { x: "200%", duration: 1, stagger: 0.08 }, "<")
+    .to(kineticEl, { opacity: 0, duration: 0.1 })
     .set(kineticEl, { rotation: 0, scale: 1, x: 0, opacity: 1 })
     .eventCallback("onComplete", () => {
       showHeart.value = true;
